@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>炫酷画廊</title>
+
+	<style>
+		* {padding: 0; margin: 0;}
+		body {
+			background-color: #fff;
+			color: #555;
+			font-family: 'Avenir Next','Lantinghei SC';
+			font-size: 14px;
+			-webkit-font-smoothing: antialiased;
+		}
+		.wrap {
+			width: 100%;
+			height: 600px;
+			position: absolute;
+			top: 50%;
+			margin-top: -300px;
+			background-color: #333;
+			overflow: hidden;
+			-webkit-perspective: 800;
+		}
+		/*海报样式*/
+		.photo {
+			width: 208px;
+			height: 288px;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-top: -104px;
+			margin-left: -144px;
+			z-index: 1;
+			box-shadow: 0 0 1px rgba(0,0,0,.01);
+			transition: all .8s;
+			transform: scale(1);
+			opacity: .5;
+			cursor: pointer;
+		}
+		.photo:hover{
+			opacity: 1;
+			z-index: 998;
+		}
+		.photo .side {
+			width: 100%;
+			height: 100%;
+			padding: 9%;
+			box-sizing: border-box;
+			background-color: #eee;
+			position: absolute;
+			top: 0;
+			right: 0;
+		}
+		.photo .side-front .image {
+			width: 100%;
+			height: 240px;
+			line-height: 250px;
+			overflow: hidden;
+		}
+		.photo .side-front .image img {
+			width: 100%;
+		}
+		.photo .side-front .caption {
+			padding-top: 6px;
+			text-align: center;
+			font-size: 16px;
+		}
+		.photo .side-back .desc {
+			width: 100%;
+			height: 100%;
+			color: #666;
+			font-size: 12px;
+			line-height: 1.5em;
+			overflow:auto;
+			 /*white-space:pre; 
+			text-overflow: ellipsis;*/
+		/*	overflow : hidden;
+		    text-overflow: ellipsis;
+		    display: -webkit-box;
+		    -webkit-line-clamp: 2;
+		    -webkit-box-orient: vertical;*/
+		}
+		.photo-center {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			z-index: 999;
+			/*margin-top: -160px;
+			margin-left: -114px;*/
+			transform: scale(1.25);
+			opacity: 1;
+			cursor: pointer;
+		}
+		.photo-wrap {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			-webkit-transform-style: preserve-3d;/*子元素将保留其 3D 位置*/
+			transition: all .8s;			
+		}
+		.photo-wrap .side {
+			-webkit-backface-visibility: hidden;
+		}
+		.photo-wrap .side-front {
+			-webkit-transform:rotateY(0deg);
+		}
+		.photo-wrap .side-back {
+			-webkit-transform:rotateY(180deg);
+		}
+		.photo-front .photo-wrap {
+			-webkit-transform:rotateY(0deg);
+		}
+		.photo-back .photo-wrap {
+			-webkit-transform:rotateY(180deg);
+		}
+		
+		.navBar{
+			width: 80%;
+			position: absolute;
+			left: 10%;
+			bottom: 8%;
+			text-align: center;
+			z-index: 999;
+		}
+		.navBar span.i { /*普通样式*/
+			display: inline-block;
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			text-align: center;
+			background-color: #aaa;
+			cursor: pointer;
+			transform: scale(.5);
+			transition: all .8s;
+			-webkit-transform-style: preserve-3d;
+		}
+		.navBar span.i-current {/*选中样式*/
+			position: relative;
+			transform: scale(1);
+			transform:rotateY(0deg)
+		}
+		.navBar span.i-back {
+			transform:rotateY(-180deg);
+			background-color: #555;
+		}
+		.navBar span.i:before {
+			position: absolute;
+			left: 0;
+			width: 100%;
+			content: "正";
+			opacity: 0;
+			line-height: 30px;
+			color: #fff;
+			transform: rotateY(0deg);
+			text-align: center;
+			-webkit-backface-visibility: hidden;
+		}
+		.navBar span.i:after {
+			position: absolute;
+			left: 0;
+			content: "反";
+			width: 100%;
+			line-height: 30px;
+			opacity: 0;
+			color: #fff;
+			text-align: center;
+			transform: rotateY(180deg);
+			-webkit-backface-visibility: hidden;
+		}
+		
+		.navBar span.i.i-current:before {
+			opacity: 1;
+		}
+		.navBar span.i.i-current:after { /*选中样式*/
+			opacity: 1;
+		}
+	</style>
+
+</head>
+<body onselectstart="return false">
+	
+	<div class="wrap" id="wrap">
+		<div class="photo photo-front" id="photo-{{index}}" onclick="turn(this)"> <!-- 负责平移、旋转 -->
+			<div class="photo-wrap"> <!-- 负责翻转 -->
+				<div class="side side-front">
+					<p class="image">
+						<img src="./images/{{img}}" alt="">
+					</p>
+					<p class="caption">{{caption}}</p>
+				</div>
+				<div class="side side-back">
+					<p class="desc">{{desc}}</p>
+				</div>
+			</div>	
+		</div>
+	</div>
+	<script type="text/javascript" src="./data.js"></script>
+	<script>
+		function g(selector){//通用函数 获取DOM
+			var method=selector.substr(0,1)=="." ? "getElementsByClassName" : "getElementById";
+			return document[method](selector.substr(1));
+		}
+		var data=data;
+		function addPhoto(){//输出所有的海报
+			var template=g("#wrap").innerHTML;
+			var	html=[];
+			var nav=[];
+			var navWrap=document.createElement("div");
+				navWrap.className="navBar";
+			for (var s in data){
+				var _html=template.replace("{{index}}", s)
+							  .replace("{{img}}", data[s].img)
+							  .replace("{{caption}}", data[s].caption)
+							  .replace("{{desc}}", data[s].desc);
+				 html.push(_html); 
+nav.push('<span id="i-'+s+'" class="i" onclick="turn(g(\'#photo-'+s+'\'))">&nbsp;</span>');
+			}
+			navWrap.innerHTML=nav.join("");
+			g("#wrap").innerHTML=html.join("");	
+			//navWrap.style.marginLeft=-(navWrap.clientWidth/2)+"px";
+			g("#wrap").appendChild(navWrap);
+			var add_e_photos=g(".photo");//获取所有海报
+			var navCurrent = g(".i");
+			for(var s=0; s<add_e_photos.length; s++){
+				add_e_photos[s].addEventListener("mouseenter",function(){
+					clearInterval(slidePhoto);//鼠标悬停到海报时幻灯片效果停止
+				});
+				add_e_photos[s].addEventListener("mouseleave",function(){
+					// slidePhoto=null;
+					slidePhoto=setInterval(function(){//鼠标离开海报时幻灯片效果开始
+						start++;
+						if (start==dataCount) {start=0;};
+						turn(g("#photo-"+start));
+					},5000);
+				});
+			}
+			for (var v = 0; v < navCurrent.length; v++) {
+				navCurrent[v].addEventListener("mousedown", function(){
+					clearInterval(slidePhoto);//鼠标按下到海报时幻灯片效果停止
+				});
+				navCurrent[v].addEventListener("mouseup", function(){
+					slidePhoto=setInterval(function(){//鼠标松开海报时幻灯片效果开始
+						start++;
+						if (start==dataCount) {start=0;};
+						turn(g("#photo-"+start));
+					},5000);
+				})
+			};
+			 rsort(0);//排序海报
+		}
+		addPhoto();
+
+		function rsort(n){//排序海报
+			 start=n;
+			var _photos=g(".photo"),
+				photos=[];
+				for(var i=0; i<_photos.length; i++){
+				_photos[i].className=_photos[i].className.replace(/\s*photo-center\s*/,"");
+				_photos[i].className=_photos[i].className.replace(/\s*photo-back\s*/,"");
+					_photos[i].style.left="50%";
+					_photos[i].style.top="50%";
+					photos.push(_photos[i]);//所有海报
+				}
+			var photoCenter=g("#photo-"+n);
+			var navCurrent=g("#i-"+n);//对应中心图片的控制按钮
+			//设置中心海报的位置
+		  	photoCenter.className+=" photo-center";	
+		  	photoCenter.style.left="50%";
+		  	photoCenter.style.top="50%";
+		  	photoCenter.style["transform"]="";
+		  	photoCenter.style.marginTop=-(photoCenter.clientHeight/2)+"px";
+		  	photoCenter.style.marginLeft=-(photoCenter.clientWidth/2)+"px";
+		  	photoCenter=photos.splice(n, 1)[0];
+		  	//把海报分为左右两个区域
+		  	var photos_left=photos.splice(0, Math.ceil(photos.length/2));
+		  	var photos_right=photos;
+		  	var navs=g(".i");//所有nav按钮
+		  	var ranges=range();//取得范围
+
+		  	for (var i=0; i<navs.length; i++){//初始化控制按钮样式
+		  		navs[i].className=navs[i].className.replace(/\s*i-current\s*/,' ');
+		  		navs[i].className=navs[i].className.replace(/\s*i-back/,'');
+		  	}
+		  	navCurrent.className+=" i-current";//对应中心图片的控制按钮添加样式
+
+		  	// navCurrent.addEventListener("mouseenter", function(){
+		  	// 	clearInterval(slidePhoto);//鼠标悬停到中心海报的按钮时幻灯片效果停止
+		  	// });
+		  	// navCurrent.addEventListener("mouseleave", function(){
+		  	// 	// slidePhoto=null;
+		  	// 	slidePhoto=setInterval(function(){//鼠标离开中心海报对应的按钮时幻灯片效果开始
+					// 	turn(g("#photo-"+start));
+					// 	start++;
+					// 	if (start==dataCount) {start=0;};
+					// },5000);
+		  	// });
+
+		 	for (var s in photos_left) {
+		 		photos_left[s].style.left=random([ranges.left.x[0], ranges.left.x[1]])+"px";
+		 		photos_left[s].style.top=random([ranges.left.y[0], ranges.left.y[1]])+"px";
+		 		photos_left[s].style["-webkit-transform"]="rotate("+random([-60, 60])+"deg)";
+		 		photos_left[s].style.marginLeft=0;
+			 	photos_left[s].style.marginTop=0;
+		 	};
+		 	for (var s in photos_right) {
+		 		photos_right[s].style.left=random([ranges.right.x[0], ranges.right.x[1]])+"px";
+		 		photos_right[s].style.top=random([ranges.right.y[0], ranges.right.y[1]])+"px";
+		 		photos_right[s].style["-webkit-transform"]="rotate("+random([-60, 60])+"deg)";
+		 		photos_right[s].style.marginLeft=0;
+			 	photos_right[s].style.marginTop=0;
+		 	};
+		}
+
+		var dataCount=data.length;
+		var start=0;
+		var slidePhoto=setInterval(function(){//幻灯片效果
+			start++;
+			if (start==dataCount) {start=0;};
+			turn(g("#photo-"+start));	
+		},5000);
+
+		//photo的偏移范围
+		function range(){
+			var ranges={left:{x:[], y:[]}, right: {x:[], y:[]}};
+			var wrap={
+				w: g("#wrap").clientWidth,
+				h: g("#wrap").clientHeight
+			};
+			var photo={
+				w: g(".photo")[0].clientWidth,
+				h: g(".photo")[0].clientHeight
+			};
+			ranges.wrap=wrap;
+			ranges.ghoto=photo;
+			ranges.left.x=[0-.3*photo.w, wrap.w/2-1.7*photo.w];//控制图片范围
+			ranges.left.y=[0-.3*photo.h, wrap.h-.7*photo.h];
+			ranges.right.x=[wrap.w/2+photo.w/2, wrap.w-.7*photo.w];
+			ranges.right.y=ranges.left.y;
+			return ranges;
+		}
+		//在一个范围内生成一个随机数
+		function random(range){
+			var max=Math.max(range[0], range[1]),
+				min=Math.min(range[0], range[1]);
+			return Math.floor(Math.random()*(max-min))+min;
+		}
+
+		// 翻面控制
+		function turn(elem){
+			var cls=elem.className;
+			var n=elem.id.split("-")[1];//获取当前海报的index
+			if (/photo-center/.test(cls)) {//判断当前的海报是否有photo-center类
+				if (/photo-front/.test(cls)) {//判断当前的海报是否有photo-front类,是否在正面
+				cls=cls.replace(/photo-front/, "photo-back");
+				 g("#i-"+n).className+=" i-back";
+				}else {
+					cls=cls.replace(/photo-back/, "photo-front");
+					g("#i-"+n).className=g("#i-"+n).className.replace(/\s*i-back\s*/, '');
+				}
+				return elem.className=cls;
+			}else {//没有photo-center重新执行排序
+				rsort(n);
+			}			
+		}	 
+	</script>
+</body>
+</html>
